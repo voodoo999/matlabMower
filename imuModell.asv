@@ -1,0 +1,7 @@
+function [pos] = imuModell(pos_old, a)
+    
+    t=a(1,4);
+
+    pos = (pos_old(1,1) + a(1,1)*
+
+end
