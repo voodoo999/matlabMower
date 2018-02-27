@@ -1,9 +1,8 @@
+R = 2;
 
-r = 10;
-
-xstart = [0 0 0];
-xodo = [0 0 0];
-vstart = [0.2 0.3];
+xstart = [0 0 55];
+xodo = [0 0 55];
+v = [0.2 0.5 0];
 astart = [0 0 0];
 
 X =[];
@@ -15,22 +14,18 @@ Yod = [];
 Ximu = [];
 Yimu = [];
 
-for i = 0:+.1:2*pi
-    temp=kinModell(xstart, vstart);
-    temp2=odometrie(xodo, vstart);
-    xstart=temp;
-    xodo=temp2;
+for i = 0:+.1:25
+    v(1,3) = i;
+    temp=kinModell(xstart, v);
+    temp2=odometrie(xodo, v);
+    xstart=temp.';
+    xodo=temp.';
     
     Xod=[Xod xodo(1,1)];
     Yod=[Yod xodo(1,2)];
     
     Xkin=[Xkin xstart(1,1)];
-    Ykin=[Ykin xstart(1,2)];
-    
-    X=[X r*cos(i)];
-    Y=[Y r*sin(i)];
-    
-    
+    Ykin=[Ykin xstart(1,2)];  
 end
 
-plot(X,Y, Xkin, Ykin, Xod, Yod)
+plot(Xkin, Ykin, Xod, Yod)

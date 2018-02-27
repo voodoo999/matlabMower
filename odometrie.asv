@@ -10,8 +10,9 @@ function [pos] = odometrie(pos_old, v)
     achsenlaenge = 0.5;
     w = (vright-vleft)/achsenlaenge;
     
-    ICC = [(xpos - R*sin(phi)) (ypos + R*cos(phi))];
-    pos = ([cos(w*t) -sin(w*t) 0; sin(w*t) cos(w*t) 0; 0 0 1]*[xpos -  ICC(1,1); ypos - ICC(1,2); 0]) +[ICC(1,1);ICC(1,2);w*t];
+    ICC = [(xpos - R*sin(w)) (ypos + R*cos(phi))];
+
+    pos = ([cos(w*t) -sin(w*t) 0; sin(w*t) cos(w*t) 0; 0 0 1]*[xpos -  ICC(1,1); ypos - ICC(1,2); 0]) +[ICC(1,1);ICC(1,2);w*t]
 
 end
 
