@@ -1,0 +1,18 @@
+
+r = 10;
+
+x(t)= r*cos(t);
+y(t)= r*sin(t);
+
+
+for i = pi:-.3:-pi
+    plot(x(i), y(i), 'r
+
+
+
+
+
+
+
+
+end
