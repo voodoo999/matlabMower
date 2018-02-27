@@ -6,7 +6,7 @@ R = 2;
 
 xstart = [0 0 55];
 xodo = [0 0 55];
-ximu = [0 0 55];
+ximu = [path(0, 0) path(0,0) 55];
 v = [0.2 0.5 0];
 a = [1 2 0 0];
 
@@ -21,15 +21,15 @@ Yimu = [];
 figure;
 hold on;
 
-for i = 0:+.1:25
-    v(1,3) = 0.1;
-    a = [v/.1 .1];
+for i = -10:+.1:10
+    v = [.2 .5 .1];
+    a = [1 path(i, 2) ximu(1,3) .1];
     temp=kinModell(xstart, v);
     temp2=odometrie(xodo, v);
     temp3=imuModell(ximu, a);
     xstart=temp.';
     xodo=temp2.';
-    ximu=temp3.';
+    ximu=temp3;
     
     Xod=[Xod xodo(1,1)];
     Yod=[Yod xodo(1,2)];
@@ -42,6 +42,6 @@ for i = 0:+.1:25
 
     plot(Xkin, Ykin, 'g');
     plot(Xod, Yod, 'r');
-    plot(Ximu, Yimu, 'b');
+    %plot(Ximu, Yimu, 'b');
     pause(0.01);
 end

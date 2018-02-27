@@ -1,12 +1,13 @@
 function [pos] = imuModell(pos_old, a)
-    R=2;
     t=a(1,4);
-    velocityX = a(1,1)*t+(1/2)*a(1,1)*t*t;
-    velocityY = a(1,2)*t*(1/2)*a(1,2)*t*t;
-    phi=a(1,3);
+    accX = a(1,1)+rand(1)*0.03;
+    accY = a(1,2)+rand(1)*0.03;
+    accYaw = atan(accX/-accY);
+    
+    velX = accX*t;
+    velY = accY*t;
+    velYaw = accYaw*t;
 
-    pos = [pos_old(1,1)+velocityX*2*cos(phi)
-            pos_old(1,2)+velocityY*2*sin(phi)
-                a(1,3)];
+    pos = [pos_old(1,1)+velX*t pos_old(1,2)+velY*t pos_old(1,3)+velYaw*t];
 
 end
