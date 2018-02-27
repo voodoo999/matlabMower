@@ -3,8 +3,8 @@ function [pos] = odometrie(pos_old, v)
     xpos = pos_old(1,1);
     ypos = pos_old(1,2);
     phi = pos_old(1,3);
-    vleft = (v(1,1)+rand(1))
-    vright = (v(1,2)+rand(1))
+    vleft = (v(1,1)+rand(1));
+    vright = (v(1,2)+rand(1));
     
     R = (vleft+vright)/(2*(vright-vleft));
     achsenlaenge = 0.5;

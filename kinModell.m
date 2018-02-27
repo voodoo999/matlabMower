@@ -3,8 +3,8 @@ function [pos] = kinModell(pos_old, v)
     xpos = pos_old(1,1);
     ypos = pos_old(1,2);
     phi = pos_old(1,3);
-    vleft = v(1,1)
-    vright = v(1,2)
+    vleft = v(1,1);
+    vright = v(1,2);
     
     R = (vleft+vright)/(2*(vleft-vright));
     achsenlaenge = 0.5;
