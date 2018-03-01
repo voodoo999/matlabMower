@@ -1,17 +1,30 @@
 function [pos] = odometrie(pos_old, v)
-    t=v(1,3);
-    xpos = pos_old(1,1);
-    ypos = pos_old(1,2);
-    phi = pos_old(1,3);
-    vleft = (v(1,1)+rand(1) * 0.01)
-    vright = (v(1,2)+rand(1) * 0.01)
+    %Radius Achsenlaenge
+    L = 0.1575;
+    %Geschwindigkeit Roboter
+    vel = v(1,1);
+    %Winkelgeschwindigkeit
+    w = v(1,2);
+    %delta t, Zeit seit letztem Schritt
+    t = v(1,3);
+    %Radgeschwindigkeiten
+    vleft = vel+L*w +rand(1)*0.03;
+    vright = L*w-vel + rand(1)*0.03;
     
-    achsenlaenge = 0.5;
-    R = achsenlaenge/2 * (vleft+vright)/(vright-vleft);
-    w = (vright-vleft)/achsenlaenge;
+    %Strecke links, rechts
+    l_L = vleft*t;
+    l_R = vright*t;
     
-    ICC = [(xpos - R*sin(phi)) (ypos + R*cos(phi))];
-    pos = ([cos(w*t) -sin(w*t) 0; sin(w*t) cos(w*t) 0; 0 0 1]*[xpos -  ICC(1,1); ypos - ICC(1,2); phi]) +[ICC(1,1);ICC(1,2);w*t];
+    %Änderung Strecke
+    delta_s = (l_R - l_L)/2;
+    
+    %Änderung Orientierung
+    delta_phi = (l_R+l_L)/(2*L);
+    
+    %Neue Position berechnen.
+    pos(1,1) = pos_old(1,1) + delta_s*cos(delta_phi);
+    pos(1,2) = pos_old(1,2) + delta_s*sin(delta_phi);
+    pos(1,3) = pos_old(1,3) + delta_phi;
 
 end
 
