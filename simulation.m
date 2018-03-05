@@ -58,12 +58,12 @@ for c = 0:+.5:20
     
     %Berechnen der neuen Positionen der Modelle
     posKin=kinModell(posKin, v);
-    posOdo=odometrie(posOdo, v);
+    posOdo=odometrie(posOdo, v, 0.001);
     posImu=imuModell(posImu, a);
     
     %Hinzufügen der neuen Punkte
     XOdo=[XOdo posOdo(1,1)];
-    Yod=[Yod posOdo(1,2)];
+    YOdo=[YOdo posOdo(1,2)];
     XKin=[XKin posKin(1,1)];
     YKin=[YKin posKin(1,2)];
     XImu=[XImu posImu(1,1)];
@@ -71,7 +71,7 @@ for c = 0:+.5:20
     
     %Plotten
     plot(XKin, YKin, 'g');
-    plot(XOdo, Yod, 'r');
+    plot(XOdo, YOdo, 'r');
     plot(XImu, YImu, 'b');
     pause(.1);
 end
