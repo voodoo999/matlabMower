@@ -22,13 +22,13 @@ fill(lineX2, lineY2, 'white');
 outerBounds = [lineX1 lineY1];
 innerBounds = [lineX2 lineY2];
 
-pf = ParticleFilter(numberParticles, bounds, innerBounds, outerBounds, 0.001);
+pf = ParticleFilter(numberParticles, bounds, innerBounds, outerBounds, 0.1);
 
 xCoordinates = zeros(1, numberParticles);
 yCoordinates = zeros(1, numberParticles);
 for x = 1 : numberParticles
-    xCoordinates = [xCoordinates pf.Particles(x).X];
-    yCoordinates = [yCoordinates pf.Particles(x).Y];
+    xCoordinates(x) = pf.Particles(x).X;
+    yCoordinates(x) = pf.Particles(x).Y;
 end
 
 
@@ -48,32 +48,34 @@ for t = 0 : timestep : 500
     measureRight = original.getSensorRight();
     %check with map
     %check x position
-    measuredBool = original.X < 0 || original.X > 10 || original.Y < 0 || original.Y > 10;% generell
-    measuredBool = measuredBool || (measureLeft(1) < innerBounds(1,1) && measureLeft(1) > outerBounds(1,1)); %unten
-    measuredBool = measuredBool || (measureLeft(1) > innerBounds(3,1) && measureLeft(1) < outerBounds(3,1)); %oben
-    measuredBool = measuredBool || (measureLeft(2) < innerBounds(1,2) && measureLeft(2) > outerBounds(1,2)); %links
-    measuredBool = measuredBool || (measureLeft(2) > innerBounds(3,2) && measureLeft(2) < outerBounds(3,2)); %rechts 
+    measuredBool = (measureLeft(1) < innerBounds(1,2) && measureLeft(1) > outerBounds(1,2)); %unten
+    measuredBool = measuredBool || (measureLeft(1) > innerBounds(3,2) && measureLeft(1) < outerBounds(3,2)); %oben
+    measuredBool = measuredBool || (measureLeft(2) < innerBounds(1,1) && measureLeft(2) > outerBounds(1,1)); %links
+    measuredBool = measuredBool || (measureLeft(2) > innerBounds(3,1) && measureLeft(2) < outerBounds(3,1)); %rechts 
     measureLeft = measuredBool;
     
-    measuredBool = original.X < 0 || original.X > 10 || original.Y < 0 || original.Y > 10;% generell
-    measuredBool = measuredBool || (measureRight(1) < innerBounds(1,1) && measureRight(1) > outerBounds(1,1)); %unten
-    measuredBool = measuredBool || (measureRight(1) > innerBounds(3,1) && measureRight(1) < outerBounds(3,1)); %oben
-    measuredBool = measuredBool || (measureRight(2) < innerBounds(1,2) && measureRight(2) > outerBounds(1,2)); %links
-    measuredBool = measuredBool || (measureRight(2) > innerBounds(3,2) && measureRight(2) < outerBounds(3,2)); %rechts 
+    measuredBool = (measureRight(1) < innerBounds(1,2) && measureRight(1) > outerBounds(1,2)); %unten
+    measuredBool = measuredBool || (measureRight(1) > innerBounds(3,2) && measureRight(1) < outerBounds(3,2)); %oben
+    measuredBool = measuredBool || (measureRight(2) < innerBounds(1,1) && measureRight(2) > outerBounds(1,1)); %links
+    measuredBool = measuredBool || (measureRight(2) > innerBounds(3,1) && measureRight(2) < outerBounds(3,1)); %rechts 
     measureRight = measuredBool;
     
     pf = pf.update(v, [measureLeft measureRight]);
     xCoordinates = zeros(1, numberParticles);
     yCoordinates = zeros(1, numberParticles);
     for x = 1 : numberParticles
-        xCoordinates = [xCoordinates pf.Particles(x).X];
-        yCoordinates = [yCoordinates pf.Particles(x).Y];
+        xCoordinates(x) = pf.Particles(x).X;
+        yCoordinates(x) = pf.Particles(x).Y;
     end
     
-    if measureLeft || measureRight
+    if measureLeft && measureRight
         v = [-0.1 1 timestep];
+    elseif measureLeft && not(measureRight)
+        v = [0.5 0.1 timestep];
+    elseif measureRight && not(measureLeft)
+        v = [0.5 -0.1 timestep];
     else
-        v = [1 0 timestep];
+        v = [0.5 0 timestep];
     end
     delete(scatterParticles);
     delete(scatterOriginal);
@@ -81,5 +83,5 @@ for t = 0 : timestep : 500
     scatterParticles = scatter(xCoordinates, yCoordinates, 5, 'b', 'filled');
     scatterOriginal = scatter(original.X, original.Y, 20, 'g', 'filled');
     scatterMean = scatter(sum(xCoordinates)/numberParticles,sum(yCoordinates)/numberParticles,15,'r','filled');
-    pause(0.1);
+    pause(0.01);
 end

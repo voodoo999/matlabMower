@@ -39,23 +39,24 @@ classdef ParticleFilter
                 measureLeft = obj.Particles(x).getSensorLeft();
                 measureRight = obj.Particles(x).getSensorRight();
                 %check with map
-                measuredBool = obj.Particles(x).X < 0 || obj.Particles(x).X > 10 || obj.Particles(x).Y < 0 || obj.Particles(x).Y > 10;% generell
-                measuredBool = measuredBool || (measureLeft(1) < obj.InnerBounds(1,1) && measureLeft(1) > obj.OuterBounds(1,1)); %unten
-                measuredBool = measuredBool || (measureLeft(1) > obj.InnerBounds(3,1) && measureLeft(1) < obj.OuterBounds(3,1)); %oben
-                measuredBool = measuredBool || (measureLeft(2) < obj.InnerBounds(1,2) && measureLeft(2) > obj.OuterBounds(1,2)); %links
-                measuredBool = measuredBool || (measureLeft(2) > obj.InnerBounds(3,2) && measureLeft(2) < obj.OuterBounds(3,2)); %rechts 
+%                 outOfMap = obj.Particles(x).X < 0 || obj.Particles(x).X > 10 || obj.Particles(x).Y < 0 || obj.Particles(x).Y > 10;% generell
+                measuredBool = (measureLeft(1) < obj.InnerBounds(1,2) && measureLeft(1) > obj.OuterBounds(1,2)); %unten
+                measuredBool = measuredBool || (measureLeft(1) > obj.InnerBounds(3,2) && measureLeft(1) < obj.OuterBounds(3,2)); %oben
+                measuredBool = measuredBool || (measureLeft(2) < obj.InnerBounds(1,1) && measureLeft(2) > obj.OuterBounds(1,1)); %links
+                measuredBool = measuredBool || (measureLeft(2) > obj.InnerBounds(3,1) && measureLeft(2) < obj.OuterBounds(3,1)); %rechts 
                 measureLeft = measuredBool;
 
-                measuredBool = obj.Particles(x).X < 0 || obj.Particles(x).X > 10 || obj.Particles(x).Y < 0 || obj.Particles(x).Y > 10;% generell
-                measuredBool = measuredBool || (measureRight(1) < obj.InnerBounds(1,1) && measureRight(1) > obj.OuterBounds(1,1)); %unten
-                measuredBool = measuredBool || (measureRight(1) > obj.InnerBounds(3,1) && measureRight(1) < obj.OuterBounds(3,1)); %oben
-                measuredBool = measuredBool || (measureRight(2) < obj.InnerBounds(1,2) && measureRight(2) > obj.OuterBounds(1,2)); %links
-                measuredBool = measuredBool || (measureRight(2) > obj.InnerBounds(3,2) && measureRight(2) < obj.OuterBounds(3,2)); %rechts 
+                measuredBool = (measureRight(1) < obj.InnerBounds(1,2) && measureRight(1) > obj.OuterBounds(1,2)); %unten
+                measuredBool = measuredBool || (measureRight(1) > obj.InnerBounds(3,2) && measureRight(1) < obj.OuterBounds(3,2)); %oben
+                measuredBool = measuredBool || (measureRight(2) < obj.InnerBounds(1,1) && measureRight(2) > obj.OuterBounds(1,1)); %links
+                measuredBool = measuredBool || (measureRight(2) > obj.InnerBounds(3,1) && measureRight(2) < obj.OuterBounds(3,1)); %rechts 
                 measureRight = measuredBool;
-                if (measureLeft == measurement(1)) && (measureRight == measurement(2))
+                if (measureLeft == measurement(1)) && (measureRight == measurement(2)) %&& not(outOfMap)
                     obj.Particles(x) = updateWeight(obj.Particles(x), 0.9);
-                elseif measureLeft == measurement(1) || measureRight == measurement(2)
+                elseif measureLeft == measurement(1) || measureRight == measurement(2) %&& not(outOfMap)
                     obj.Particles(x) = updateWeight(obj.Particles(x), 0.5);
+%                 elseif outOfMap
+%                     obj.Particles(x) = updateWeight(obj.Particles(x), 0.1);
                 else
                     obj.Particles(x) = updateWeight(obj.Particles(x), 0.1);
                 end
@@ -81,9 +82,9 @@ classdef ParticleFilter
                     %this is the particle on which we should resample
                     temp = obj.Particles(y);
                     %add noise to the particle where we spawn on
-                    newX = temp.X + rand(1) * 0.2;
-                    newY = temp.Y + rand(1) * 0.2;
-                    newPhi = mod(temp.Phi + rand(1) * 0.2, 2*pi);
+                    newX = temp.X + rand(1) * obj.Noise;
+                    newY = temp.Y + rand(1) * obj.Noise;
+                    newPhi = mod(temp.Phi + rand(1) * obj.Noise, 2*pi);
                     temp = updatePosition(temp, newX, newY, newPhi);
                     obj.Particles(x) = temp; %write new resampled position to particle
                     updateWeight(obj.Particles(x), 0.9); %update the weight of that particle
