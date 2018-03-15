@@ -31,7 +31,7 @@ YImu = [];
 figure;
 hold on;
 
-for c = 0:+.2:20
+for c = 0:+.2:40
     %Berechnen der letzten Geschwindigkeiten/Beschleunigungen durch Positionsänderung für
     %IMU
     velOldX = velX;
@@ -45,12 +45,12 @@ for c = 0:+.2:20
     
     %Berechnen der Geschwindigkeiten für Odometrie
     velocity = rand(1)*3;%+ velocity;
-    w = (rand(1)*(2*pi - -2*pi) + -2*pi) + w;
+    w = mod(((rand(1)*(2*pi - -2*pi) + -2*pi) + w),w);
     
     %Alte Velocity Daten an posImu anhängen.
-    posImu(1,4) = velOldX;
-    posImu(1,5) = velOldY;
-    posImu(1,6) = velOldPhi;
+    %posImu(1,4) = velOldX;
+    %posImu(1,5) = velOldY;
+    %posImu(1,6) = velOldPhi;
     
     %Vektoren für Modelle
     v = [velocity w .1];

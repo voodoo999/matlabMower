@@ -10,7 +10,7 @@ function [pos_estimate] = kalmanFilter(pos, z, u)
     %A
     A=[1 0 0; 0 1 0; 0 0 1];
     %B
-    B=[
+    B;
     %k-1 Position and Covariance
     P=[1 0 0;0 1 0;0 0 0];
     % Measurment noise
@@ -27,7 +27,7 @@ function [pos_estimate] = kalmanFilter(pos, z, u)
     %2) Project the coviariance ahead
     P_hat = A*P*A.' + Q;
     % Estimate Measurement prediction covariance
-    S = H*P_hat*H.' + R:
+    S = H*P_hat*H.' + R,
     %3) Compute Kalman Gain
     K = (P_hat*H.')/(H*P_hat*H.' + R);
     % Compute innovation
