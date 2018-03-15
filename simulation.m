@@ -6,7 +6,7 @@ clc;
 posKin = [0 0 0];
 posOld = [0 0 0];
 posOdo = [0 0 0];
-posImu = [0 0 0];
+posImu = [0 0 0 0 0 0];
 
 %Geschwindigkeit und Winkelgeschwindigkeit Odometrie
 velocity = 0;
@@ -31,7 +31,7 @@ YImu = [];
 figure;
 hold on;
 
-for c = 0:+.5:20
+for c = 0:+.2:20
     %Berechnen der letzten Geschwindigkeiten/Beschleunigungen durch Positionsänderung für
     %IMU
     velOldX = velX;
@@ -42,23 +42,28 @@ for c = 0:+.5:20
     velPhi = (posKin(1,3)-posOld(1,3))/.1;
     accX = (velX - velOldX)/.1;
     accY = (velY - velOldY)/.1;
-    accPhi = (velPhi - velOldPhi)/.1;
     
     %Berechnen der Geschwindigkeiten für Odometrie
-    velocity = rand(1)*3 + velocity;
+    velocity = rand(1)*3;%+ velocity;
     w = (rand(1)*(2*pi - -2*pi) + -2*pi) + w;
+    
+    %Alte Velocity Daten an posImu anhängen.
+    posImu(1,4) = velOldX;
+    posImu(1,5) = velOldY;
+    posImu(1,6) = velOldPhi;
     
     %Vektoren für Modelle
     v = [velocity w .1];
-    a = [accX accY accPhi .1];
+    a = [accX accY velPhi .1];
     
     %Abspeichern letzter Position für Änderungsberechnung im nächsten
     %Schritt
     posOld = posKin;
+ 
     
     %Berechnen der neuen Positionen der Modelle
     posKin=kinModell(posKin, v);
-    posOdo=odometrie(posOdo, v, 0.001);
+    posOdo=odometrie(posOdo, v, 0.03);
     posImu=imuModell(posImu, a);
     
     %Hinzufügen der neuen Punkte

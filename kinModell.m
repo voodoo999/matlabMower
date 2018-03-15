@@ -20,7 +20,7 @@ function [pos] = kinModell(pos_old, v)
     
     %Änderung Orientierung
     delta_phi = mod((l_R+l_L)/(2*L) + pos_old(1,3), 2*pi);
-    
+   
     %Neue Position berechnen
     pos(1,1) = pos_old(1,1) + delta_s*cos(delta_phi);
     pos(1,2) = pos_old(1,2) + delta_s*sin(delta_phi);
