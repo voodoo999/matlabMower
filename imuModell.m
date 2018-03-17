@@ -1,10 +1,14 @@
-function [pos] = imuModell(pos_old, a)
+function [pos] = imuModell(pos_old, a, sigma)
+    %normal distribution
+    mu=0;
+    r = mvnrnd(mu, sigma, 3);
+    
     %Delta t
     t=a(1,4);
     %Beschleunigungen mit Messfehler versehen
-    accX = a(1,1)+rand(1)*0.05;
-    accY = a(1,2)+rand(1)*0.05;
-    velYaw = a(1,3)+rand(1)*0.1;
+    accX = a(1,1)+r(1);
+    accY = a(1,2)+r(2);
+    velYaw = a(1,3)+r(3);
     
     %Geschwindigkeiten berechnen
     velX = pos_old(1,4) + accX*t;
