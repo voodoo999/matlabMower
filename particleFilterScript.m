@@ -1,87 +1,94 @@
+% This Script creates a Particle Filter
+%
+% The original Particle is green in the Map
+% A normal Particle is blue
+% The mean of all Particles is red
+% The original Particles moves from the inside to the edge of the map 
+% and then moves along the edge around the map.
+%
+% Sven Andresen (sven.andresen@student.uni-luebeck.de)
+% 06.04.2018
+%%
 close all;
 clear all;
 clc;
-%PARAMETER
-bounds = [10 10];
+
+%% PARAMETER
+bounds = [14 14];
 numberParticles = 1000;
 original = Particle(5, 5, 0);
 
-%display
-figure;
+%% Loading the Map
+map = load('map.mat');
+map = map.map;
+
+%% Display the map
+figure('Name', 'PF Map');
 axis([0 bounds(1) 0 bounds(2)]);
 hold on;
-lineX1 = [0.5; 9.5; 9.5; 0.5; 0.5];
-lineY1 = [0.5; 0.5; 9.5; 9.5; 0.5];
-%plot(lineX1, lineY1, 'black');
-lineX2 = [1; 9; 9; 1; 1];
-lineY2 = [1; 1; 9; 9; 1];
-%plot(lineX2, lineY2, 'black');
-fill(lineX1, lineY1, 'black');
-fill(lineX2, lineY2, 'white');
+show(map);
 
-outerBounds = [lineX1 lineY1];
-innerBounds = [lineX2 lineY2];
+% %display
+% lineX1 = [0.5; 9.5; 9.5; 0.5; 0.5];
+% lineY1 = [0.5; 0.5; 9.5; 9.5; 0.5];
+% lineX2 = [1; 9; 9; 1; 1];
+% lineY2 = [1; 1; 9; 9; 1];
+% %obstacles
+% outerBounds = [lineX1 lineY1];
+% innerBounds = [lineX2 lineY2];
+% map = BinaryGridMap(bounds(1), bounds(2), [outerBounds innerBounds]);
+% map.createFigure();
 
-pf = ParticleFilter(numberParticles, bounds, innerBounds, outerBounds, 0.1);
+%% Create particle filter
+pf = ParticleFilter(numberParticles, bounds, 0.15);
 
+%% Display the Particles and original and mean
+% Get Coordinates of Particle
 xCoordinates = zeros(1, numberParticles);
 yCoordinates = zeros(1, numberParticles);
 for x = 1 : numberParticles
     xCoordinates(x) = pf.Particles(x).X;
     yCoordinates(x) = pf.Particles(x).Y;
 end
-
-
+% Create scatter variables and display
 scatterParticles = scatter(xCoordinates, yCoordinates, 5, 'b', 'filled');
+scatterMean = scatter(sum(xCoordinates)/size(xCoordinates, 2),sum(yCoordinates)/size(yCoordinates, 2),15,'r','filled');
 scatterOriginal = scatter(original.X, original.Y, 20, 'g', 'filled');
-scatterMean = scatter(sum(xCoordinates)/numberParticles,sum(yCoordinates)/numberParticles,15,'r','filled');
 pause(1);
 
+%% Start particle update step
 timestep = 0.1;
-v = [1 0 timestep]; %go straight
+v = [1 0 timestep]; %go straight initially
 for t = 0 : timestep : 500
     original = original.update(v, 0);
-    
-    %check left sensor first
-    %check left sensor first
-    measureLeft = original.getSensorLeft();
-    measureRight = original.getSensorRight();
-    %check with map
-    %check x position
-    measuredBool = (measureLeft(1) < innerBounds(1,2) && measureLeft(1) > outerBounds(1,2)); %unten
-    measuredBool = measuredBool || (measureLeft(1) > innerBounds(3,2) && measureLeft(1) < outerBounds(3,2)); %oben
-    measuredBool = measuredBool || (measureLeft(2) < innerBounds(1,1) && measureLeft(2) > outerBounds(1,1)); %links
-    measuredBool = measuredBool || (measureLeft(2) > innerBounds(3,1) && measureLeft(2) < outerBounds(3,1)); %rechts 
-    measureLeft = measuredBool;
-    
-    measuredBool = (measureRight(1) < innerBounds(1,2) && measureRight(1) > outerBounds(1,2)); %unten
-    measuredBool = measuredBool || (measureRight(1) > innerBounds(3,2) && measureRight(1) < outerBounds(3,2)); %oben
-    measuredBool = measuredBool || (measureRight(2) < innerBounds(1,1) && measureRight(2) > outerBounds(1,1)); %links
-    measuredBool = measuredBool || (measureRight(2) > innerBounds(3,1) && measureRight(2) < outerBounds(3,1)); %rechts 
-    measureRight = measuredBool;
-    
-    pf = pf.update(v, [measureLeft measureRight]);
+    % Check what we originally sense
+    leftPos = map.getOccupancy(original.getSensorLeft());
+    rightPos = map.getOccupancy(original.getSensorRight());
+    % Update the particle Filter and resample
+    pf = pf.update(v, [leftPos rightPos], map);
+    % Get updates positions
     xCoordinates = zeros(1, numberParticles);
     yCoordinates = zeros(1, numberParticles);
     for x = 1 : numberParticles
         xCoordinates(x) = pf.Particles(x).X;
         yCoordinates(x) = pf.Particles(x).Y;
     end
-    
-    if measureLeft && measureRight
-        v = [-0.1 1 timestep];
-    elseif measureLeft && not(measureRight)
-        v = [0.5 0.1 timestep];
-    elseif measureRight && not(measureLeft)
-        v = [0.5 -0.1 timestep];
-    else
+    % update the driving according to the measured data
+    if leftPos && rightPos
         v = [0.5 0 timestep];
+    elseif leftPos && not(rightPos)
+        v = [0.5 -0.1 timestep];
+    elseif rightPos && not(leftPos)
+        v = [0.5 0.1 timestep];
+    else
+        v = [-0.1 1 timestep];
     end
+    % update the scatte
     delete(scatterParticles);
-    delete(scatterOriginal);
     delete(scatterMean);
+    delete(scatterOriginal);
     scatterParticles = scatter(xCoordinates, yCoordinates, 5, 'b', 'filled');
+    scatterMean = scatter(sum(xCoordinates)/size(xCoordinates, 2),sum(yCoordinates)/size(yCoordinates, 2),15,'r','filled');
     scatterOriginal = scatter(original.X, original.Y, 20, 'g', 'filled');
-    scatterMean = scatter(sum(xCoordinates)/numberParticles,sum(yCoordinates)/numberParticles,15,'r','filled');
     pause(0.01);
 end

@@ -6,21 +6,21 @@ classdef ParticleFilter
     properties
         NumberParticles;
         Particles;
-        InnerBounds;
-        OuterBounds;
         Weights;
         Map;
         Noise;
+        Bounds;
     end
     
     methods
-        function obj = ParticleFilter(numberParticles, bounds, innerBounds, outerBounds, noise)
+        function obj = ParticleFilter(numberParticles, bounds, noise)
             %PARTICLEFILTER Construct an instance of this class
-            %   Detailed explanation goes here
+            %   numberParticles is the number of Particles used
+            %   bounds is the initial area on where to spawn the particles
+            %   noise is the noise that we should add in an update step
             obj.NumberParticles = numberParticles;
-            obj.InnerBounds = innerBounds;
-            obj.OuterBounds = outerBounds;
             obj.Noise = noise;
+            obj.Bounds = bounds;
             obj.Particles = [];
             obj.Weights = [];
             for x = 1 : obj.NumberParticles
@@ -30,39 +30,56 @@ classdef ParticleFilter
             
         end
         
-        function obj = update(obj, v, measurement)
+        function obj = update(obj, v, measurement, map)
             %UPDATE update this particle filter by a given step
+            %   v is the update vector
+            %   measurement is the measure of the real robot
+            %   map is the grid map on which to check for the particle
+            %       measurement
             for x = 1 : obj.NumberParticles
                 obj.Particles(x) = update(obj.Particles(x), v, obj.Noise);
-                %look if this particle measures something
-                %check left sensor first
-                measureLeft = obj.Particles(x).getSensorLeft();
-                measureRight = obj.Particles(x).getSensorRight();
-                %check with map
-%                 outOfMap = obj.Particles(x).X < 0 || obj.Particles(x).X > 10 || obj.Particles(x).Y < 0 || obj.Particles(x).Y > 10;% generell
-                measuredBool = (measureLeft(1) < obj.InnerBounds(1,2) && measureLeft(1) > obj.OuterBounds(1,2)); %unten
-                measuredBool = measuredBool || (measureLeft(1) > obj.InnerBounds(3,2) && measureLeft(1) < obj.OuterBounds(3,2)); %oben
-                measuredBool = measuredBool || (measureLeft(2) < obj.InnerBounds(1,1) && measureLeft(2) > obj.OuterBounds(1,1)); %links
-                measuredBool = measuredBool || (measureLeft(2) > obj.InnerBounds(3,1) && measureLeft(2) < obj.OuterBounds(3,1)); %rechts 
-                measureLeft = measuredBool;
-
-                measuredBool = (measureRight(1) < obj.InnerBounds(1,2) && measureRight(1) > obj.OuterBounds(1,2)); %unten
-                measuredBool = measuredBool || (measureRight(1) > obj.InnerBounds(3,2) && measureRight(1) < obj.OuterBounds(3,2)); %oben
-                measuredBool = measuredBool || (measureRight(2) < obj.InnerBounds(1,1) && measureRight(2) > obj.OuterBounds(1,1)); %links
-                measuredBool = measuredBool || (measureRight(2) > obj.InnerBounds(3,1) && measureRight(2) < obj.OuterBounds(3,1)); %rechts 
-                measureRight = measuredBool;
-                if (measureLeft == measurement(1)) && (measureRight == measurement(2)) %&& not(outOfMap)
+                % Looking at every particle
+                % Check what this particle measures
+                leftPos = checkBounds(obj, obj.Particles(x).getSensorLeft());
+                if leftPos == 1
+                    leftPos = map.getOccupancy(obj.Particles(x).getSensorLeft());
+                end
+                rightPos = checkBounds(obj, obj.Particles(x).getSensorRight());
+                if rightPos
+                    rightPos = map.getOccupancy(obj.Particles(x).getSensorRight());
+                end
+                % Check if this particle measures the same as the original
+                % and update the weight accordingly
+                if (leftPos == measurement(1)) && (rightPos == measurement(2))
                     obj.Particles(x) = updateWeight(obj.Particles(x), 0.9);
-                elseif measureLeft == measurement(1) || measureRight == measurement(2) %&& not(outOfMap)
+                elseif leftPos == measurement(1) || rightPos == measurement(2)
                     obj.Particles(x) = updateWeight(obj.Particles(x), 0.5);
-%                 elseif outOfMap
-%                     obj.Particles(x) = updateWeight(obj.Particles(x), 0.1);
                 else
                     obj.Particles(x) = updateWeight(obj.Particles(x), 0.1);
                 end
                 obj.Weights(x) = obj.Particles(x).Weight;
             end
-            %resampling
+            % Resample if the particle filter becomes very bad
+            if weightCheck(obj, 0.5)
+                obj = resampleNormal(obj);
+            end
+            %end of update process
+        end
+        
+        function ret = weightCheck(obj, check)
+            %WEIGHTCHECK return a true or false boolean wether we need to
+            %resample in case the weights are to bad. Specifically if in
+            %the case N_eff = 1 / sum(w_i^2) and N_eff < a*N where a is our
+            %check parameter (e.g. 0.5).
+            for x = 1 : obj.NumberParticles
+                w = 1/(obj.Weights(x) ^2);
+            end
+            ret = w < check * obj.NumberParticles;
+        end
+        
+        function obj = resampleNormal(obj)
+            %RESAMPLENORMAL does a resample on the particles with a normal
+            %distibution and normal resmpling.
             w = 1/sum(obj.Weights) * obj.Weights;
             r = rand(numel(w), 1);
             for x = 1 : obj.NumberParticles
@@ -90,7 +107,12 @@ classdef ParticleFilter
                     updateWeight(obj.Particles(x), 0.9); %update the weight of that particle
                 end
             end
-            %end of update process
+        end
+        
+        function ret = checkBounds(obj, coordinate)
+            %   CHECKBOUNDS checks wether the coordinate is in the bounds
+            ret = coordinate(1) > 0 && coordinate(2) > 0;
+            ret = ret && coordinate(1) < obj.Bounds(1) && coordinate(2) < obj.Bounds(2);
         end
     end
 end
