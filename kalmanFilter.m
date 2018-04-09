@@ -1,87 +1,72 @@
-function [pos_estimate, P_estimate, Q , R] = kalmanFilter(pos, u, sigma, flag, P, Q, R)
-    dt=.2;
-    pos
-    phi=pos(2,1);
-    u = u.';
+function [x_estimate, P_estimate, Q , R] = kalmanFilter(x, Z, sigma, flag, P, Q, R)
+    % This is the Kalman Filter which fuses both sensor inputs from
+    % odometrie and IMU of the lawn mower robot. Both sensors are providing
+    % estimated new positions which are fused to an more accurate estimated
+    % positon.
+    %
+    % Equations:
+    %   Predict
+    %      x_hat = A * x
+    %      P_hat = A * P * A^T + Q
+    % 
+    %   Measurment
+    %       S = H * P_hat * H^T + R
+    %       K = (P_hat * H^T)*S^-1
+    %       x_estimate = x_hat + K*(z-H*x_hat)
+    %       P_estimate = P_hat - K * S * K^T
+    %
+    % Syntax
+    %   [x_estimate, P_estimate, Q, R] = kalmanFilter(x, z, sigma, flag, P, Q, R)
+    %
+    % Input
+    %   x = last estimated position [x y]^T
+    %   z = last measurments from odometrie and IMU 
+    %       [x_Odometrie y_Odometrie x_IMU y_IMU]^T
+    %   sigma = sigmas of both sensors [sigmaOdometrie sigmaIMU]^T
+    %   flag = flag shows if this is the first round of KF
+    %   P = last calculated estimated P matrice
+    %   Q = last calculcated Q matrice
+    %   R = last calculcated R matrice
+    %
+    % Output
+    %   x_estimate = new estimated position after sensor fusion
+    %   P_estimate = new estimated P matrice after sensor fusion
+    %   Q = new calculcated Q matrice
+    %   R = R matrice. Has to be given back to simulation.
+    %
+    % Date: 28.03.2018
+    % Author: Rico Klinckenberg (rico.klinckenberg@student.uni-luebeck.de)
+    %% Parametrs
+    A=  [1 0;               %A is 2x2 matrix (state transition matrix)
+         0 1];
 
-    %L
-    L = 100;
-    
-    
-    %state = [x y yaw x' y' yaw' x'' y'' yaw'']
-    %u vector = [v yaw accX accY velYaw]
+    H = [0.7 0;             %H is 4x2 matrix (sensor model matrice) 
+         0 0.7;
+         0.3 0;
+         0 0.3];
+         
 
-    %A is 9x9 matrix
-    A=  [1 0 0 dt 0 0 (dt*dt)/2 0 0;
-         0 1 0 0 dt 0 0 (dt*dt)/2 0;
-         0 0 1 0 0 dt 0 0 (dt*dt)/2;
-         0 0 0 1 0 0 dt 0 0;
-         0 0 0 0 1 0 0 dt 0;
-         0 0 0 0 0 1 0 0 dt;
-         0 0 0 0 0 0 1 0 0;
-         0 0 0 0 0 0 0 1 0;
-         0 0 0 0 0 0 0 0 1];
-    %B must be 9x5 to get a 9x1 vector in step 1
-    B =     [dt*cos(phi) 0 0 0 0;
-             dt*sin(phi) 0 0 0 0;
-             0 1 0 0 0;
-             0 0 dt 0 0;
-             0 0 0 dt 0;
-             0 0 0 0 1;
-             0 0 1 0 0;
-             0 0 0 1 0;
-             0 0 0 0 0];
-    %H
-    H = [0 0 0 0 0 0 0 0 0;
-         0 0 1 0 0 0 0 0 0;
-         0 0 0 0 0 0 1 0 0;
-         0 0 0 0 0 0 0 1 0;
-         0 0 0 0 0 0 0 0 1];
-     
-    if flag == false
-    %k-1 Position and Covariance
-    P = [L 0 0 0 0 0 0 0 0;
-         0 L 0 0 0 0 0 0 0;
-         0 0 L 0 0 0 0 0 0;
-         0 0 0 L 0 0 0 0 0;
-         0 0 0 0 L 0 0 0 0;
-         0 0 0 0 0 L 0 0 0;
-         0 0 0 0 0 0 L 0 0;
-         0 0 0 0 0 0 0 L 0;
-         0 0 0 0 0 0 0 0 L];
-     
-    % Measurment noise
-    R = [sigma(1) 0 0 0 0;
-         0 sigma(2) 0 0 0;
-         0 0 sigma(3) 0 0;
-         0 0 0 sigma(4) 0;
-         0 0 0 0 sigma(5)];
-    %Process Noise Covariance
-    Q = [L 0 0 0 0 0 0 0 0;
-         0 L 0 0 0 0 0 0 0;
-         0 0 L 0 0 0 0 0 0;
-         0 0 0 L 0 0 0 0 0;
-         0 0 0 0 L 0 0 0 0;
-         0 0 0 0 0 L 0 0 0;
-         0 0 0 0 0 0 L 0 0;
-         0 0 0 0 0 0 0 L 0;
-         0 0 0 0 0 0 0 0 L];
+    if flag == false        %generate new P, Q, R and H matrices if this is first round
+        
+    P = [100 0;             %inital P matrix
+         0 100];
+    
+    R = [sigma(1) 0 0 0;    %inital R matrix (Measurment noise)
+         0 sigma(2) 0 0;
+         0 0 sigma(3) 0;
+         0 0 0 sigma(4)];
+
+    Q=ones(2,2)*0.8;        %inital Q matrix  (Process Noise Covariance)
+    
     end
   
-    %1) Project the state ahead
-    x_hat = A*pos + B*u;
-    %2) Project the coviariance ahead
+    %% The Kalman Filter
+    x_hat = A*x;
     P_hat = A*P*A.' + Q;
-    % Estimate Measurement prediction covariance
+    
     S = H*P_hat*H.' + R;
-    %3) Compute Kalman Gain
-    K = (P_hat*H.')/(H*P_hat*H.' + R);
-    % Compute innovation
-    z = H*x_hat + u;
-    r = z - H*x_hat;
-    %4) Update state estimate
-    pos_estimate = x_hat + K*(z-H*x_hat);
-    %5) Update the covariance
+    K = (P_hat*H.')/S;
+    x_estimate = x_hat + K*(Z-H*x_hat);
     P_estimate = P_hat - K*S*K.';
 end
 
